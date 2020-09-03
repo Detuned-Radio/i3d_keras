@@ -105,7 +105,7 @@ def read_frames(video_path):
     return sorted_list_frames
 
 
-def run_flow(sorted_list_frames, train):
+def run_flow(sorted_list_frames, train, debug):
     sorted_list_img = []
     for frame in sorted_list_frames:
         img = cv2.imread(frame, cv2.IMREAD_UNCHANGED)
@@ -121,11 +121,17 @@ def run_flow(sorted_list_frames, train):
     result = np.zeros((1, output_h, output_w, 2))
 
     prev = sorted_list_img[0]
+    frame_no = 1
     for curr in sorted_list_img[1:]:
+        start = time.time()
         flow = compute_optical_flow(prev, curr)
+        end = time.time()
+        if debug:
+            print(f'#{frame_no} Flow computation took: {end - start}')
         flow = pre_process_flow(flow, train)
         prev = curr
         result = np.append(result, flow, axis=0)
+        frame_no += 1
 
     result = result[1:, :, :, :]
     result = np.expand_dims(result, axis=0)
@@ -189,7 +195,7 @@ def preprocess_video(video_path, save_path, train=False, debug=False):
         print(f'RGB output saved. Time taken: {rgb_dur} sec')
 
     start = time.time()
-    flow = run_flow(sorted_list_frames, train)
+    flow = run_flow(sorted_list_frames, train, debug)
     npy_flow_output = save_path + class_name + "/" + video_name + '_flow.npy'
     np.save(npy_flow_output, flow)
     end = time.time()
