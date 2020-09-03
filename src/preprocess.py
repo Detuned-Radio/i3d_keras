@@ -71,7 +71,7 @@ def run_rgb(sorted_list_frames, train):
         output_dims = resize_dims(cv2.imread(sorted_list_frames[0], cv2.IMREAD_UNCHANGED))
     output_h = output_dims[0]
     output_w = output_dims[1]
-    result = np.zeros((1, ouput_h, output_w, 3))
+    result = np.zeros((1, output_h, output_w, 3))
     for full_file_path in sorted_list_frames:
         img = cv2.imread(full_file_path, cv2.IMREAD_UNCHANGED)
         img = pre_process_rgb(img, train)
