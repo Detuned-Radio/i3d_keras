@@ -149,7 +149,7 @@ def compute_optical_flow(prev, curr):
     return flow_frame
 
 # ---> MAIN FUNCTION
-def preprocess_video(video_path, save_path, train=False)
+def preprocess_video(video_path, save_path, train=False):
     frame_output_path = '/tmp/frames/'
     if not os.path.exists(frame_output_path):
         os.makedirs(frame_output_path)
