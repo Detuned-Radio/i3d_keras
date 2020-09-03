@@ -149,28 +149,41 @@ def compute_optical_flow(prev, curr):
     return flow_frame
 
 # ---> MAIN FUNCTION
-def preprocess_video(video_path, save_path, train=False):
+def preprocess_video(video_path, save_path, train=False, debug=False):
     frame_output_path = '/tmp/frames/'
     if not os.path.exists(frame_output_path):
         os.makedirs(frame_output_path)
 
     # sample all video from video_path at specified frame rate (FRAME_RATE param)
     sample_video(video_path, frame_output_path)
+    if debug:
+        print('Resampled video to 25fps.')
 
     # make sure the frames are processed in order
     sorted_list_frames = read_frames(frame_output_path)
+    if len(sorted_list_frames) == 0:
+        print('ERROR: No frames read.')
+        os.rmdir(frame_output_path)
+        exit()
+    if debug:
+        print(f'Read {len(sorted_list_frames)} frames.')
 
     video_name = video_path.split("/")[-1][:-4]
     class_name = video_path.split("/")[-2]
 
     if not os.path.exists(save_path + class_name + "/" ):
         os.makedirs(save_path + class_name + "/" )
+
     rgb = run_rgb(sorted_list_frames, train)
     npy_rgb_output = save_path + class_name + "/" + video_name + '_rgb.npy'
     np.save(npy_rgb_output, rgb)
+    if debug:
+        print('RGB output saved.')
 
     flow = run_flow(sorted_list_frames, train)
     npy_flow_output = save_path + class_name + "/" + video_name + '_flow.npy'
     np.save(npy_flow_output, flow)
+    if debug:
+        print('Optical Flow output saved')
 
     os.rmdir(frame_output_path)
