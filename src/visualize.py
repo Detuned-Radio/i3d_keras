@@ -95,10 +95,10 @@ def main(args):
     if not os.path.exists(args.path_output_video):
         os.makedirs(args.path_output_video)
 
-    show_rgb(npy_rgb_output)
+    # show_rgb(npy_rgb_output)
     save_rgb_video(npy_rgb_output, args.path_output_video)
 
-    show_flow(npy_flow_output)
+    # show_flow(npy_flow_output)
     save_flow_video(npy_flow_output, args.path_output_video)
 
 if __name__ == "__main__":

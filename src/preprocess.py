@@ -20,9 +20,7 @@ def sample_video(video_path, path_output):
 
 
 # the videos are resized preserving aspect ratio so that the smallest dimension is 256 pixels, with bilinear interpolation
-def resize(img):
-    # print('Original Dimensions : ', img.shape)
-
+def resize_dims(img):
     original_width = int(img.shape[1])
     original_height = int(img.shape[0])
 
@@ -36,10 +34,11 @@ def resize(img):
         new_height = int(original_width / aspect_ratio)
 
     dim = (new_width, new_height)
-    # resize image
-    resized = cv2.resize(img, dim, interpolation=cv2.INTER_LINEAR)
-    # print('Resized Dimensions : ', resized.shape)
+    return dim
 
+def resize(img):
+    # resize image
+    resized = cv2.resize(img, resize_dims(img), interpolation=cv2.INTER_LINEAR)
     return resized
 
 
@@ -65,12 +64,18 @@ def rescale_pixel_values(img):
 
 
 # The provided .npy file thus has shape (1, num_frames, 224, 224, 3) for RGB, corresponding to a batch size of 1
-def run_rgb(sorted_list_frames):
-    result = np.zeros((1, IMAGE_CROP_SIZE, IMAGE_CROP_SIZE, 3))
+def run_rgb(sorted_list_frames, train):
+    if not train:
+        output_dims = (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE)
+    else:
+        output_dims = resize_dims(cv2.imread(sorted_list_frames[0], cv2.IMREAD_UNCHANGED))
+    output_h = output_dims[0]
+    output_w = output_dims[1]
+    result = np.zeros((1, ouput_h, output_w, 3))
     for full_file_path in sorted_list_frames:
         img = cv2.imread(full_file_path, cv2.IMREAD_UNCHANGED)
-        img = pre_process_rgb(img)
-        new_img = np.reshape(img, (1, IMAGE_CROP_SIZE, IMAGE_CROP_SIZE, 3))
+        img = pre_process_rgb(img, train)
+        new_img = np.reshape(img, (1, output_h, output_w, 3))
         result = np.append(result, new_img, axis=0)
 
     result = result[1:, :, :, :]
@@ -78,9 +83,12 @@ def run_rgb(sorted_list_frames):
     return result
 
 
-def pre_process_rgb(img):
+def pre_process_rgb(img, train):
     resized = resize(img)
-    img_cropped = crop_center(resized, (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE))
+    if not train:
+        img_cropped = crop_center(resized, (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE))
+    else:
+        img_cropped = resized
     img = rescale_pixel_values(img_cropped)
     return img
 
@@ -95,18 +103,25 @@ def read_frames(video_path):
     return sorted_list_frames
 
 
-def run_flow(sorted_list_frames):
+def run_flow(sorted_list_frames, train):
     sorted_list_img = []
     for frame in sorted_list_frames:
         img = cv2.imread(frame, cv2.IMREAD_UNCHANGED)
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         sorted_list_img.append(img_gray)
 
-    result = np.zeros((1, IMAGE_CROP_SIZE, IMAGE_CROP_SIZE, 2))
+    if not train:
+        output_dims = (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE)
+    else:
+        output_dims = resize_dims(cv2.imread(sorted_list_img[0], cv2.IMREAD_UNCHANGED))
+    output_h = output_dims[0]
+    output_w = output_dims[1]
+    result = np.zeros((1, output_h, output_w, 2))
+
     prev = sorted_list_img[0]
     for curr in sorted_list_img[1:]:
         flow = compute_optical_flow(prev, curr)
-        flow = pre_process_flow(flow)
+        flow = pre_process_flow(flow, train)
         prev = curr
         result = np.append(result, flow, axis=0)
 
@@ -115,10 +130,13 @@ def run_flow(sorted_list_frames):
     return result
 
 
-def pre_process_flow(flow_frame):
+def pre_process_flow(flow_frame, train):
     resized = resize(flow_frame)
-    img_cropped = crop_center(resized, (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE))
-    new_img = np.reshape(img_cropped, (1, IMAGE_CROP_SIZE, IMAGE_CROP_SIZE, 2))
+    if not train:
+        img_cropped = crop_center(resized, (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE))
+    else:
+        img_cropped = resized
+    new_img = np.reshape(img_cropped, (1, img_cropped.shape[0], igm_cropped.shape[1], 2))
     return new_img
 
 
@@ -130,34 +148,27 @@ def compute_optical_flow(prev, curr):
     flow_frame = flow_frame / 20.0
     return flow_frame
 
-
-def main(args):
-    if not os.path.exists(args.path_output):
-        os.makedirs(args.path_output)
+# ---> MAIN FUNCTION
+def preprocess_video(video_path, save_path, train=False)
+    frame_output_path = '/tmp/frames/'
+    if not os.path.exists(frame_output_path):
+        os.makedirs(frame_output_path)
 
     # sample all video from video_path at specified frame rate (FRAME_RATE param)
-    sample_video(args.video_path, args.path_output)
+    sample_video(video_path, frame_output_path)
 
     # make sure the frames are processed in order
-    sorted_list_frames = read_frames(args.path_output)
+    sorted_list_frames = read_frames(frame_output_path)
 
-    video_name = args.video_path.split("/")[-1][:-4]
+    video_name = video_path.split("/")[-1][:-4]
+    class_name = video_path.split("/")[-2]
 
-    rgb = run_rgb(sorted_list_frames)
-    npy_rgb_output = 'data/' + video_name + '_rgb.npy'
+    rgb = run_rgb(sorted_list_frames, train)
+    npy_rgb_output = save_path + class_name + "/" + video_name + '_rgb.npy'
     np.save(npy_rgb_output, rgb)
 
-    flow = run_flow(sorted_list_frames)
-    npy_flow_output = 'data/' + video_name + '_flow.npy'
+    flow = run_flow(sorted_list_frames, train)
+    npy_flow_output = save_path + class_name + "/" + video_name + '_flow.npy'
     np.save(npy_flow_output, flow)
 
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--path_output', type=str, default="data/frames/")
-    parser.add_argument('--video_path', type=str, default="data/input_videos/cricket.avi")
-
-    args = parser.parse_args()
-
-    main(args)
+    os.rmdir(frame_output_path)
