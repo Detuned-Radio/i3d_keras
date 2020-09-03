@@ -14,24 +14,11 @@ import warnings
 
 import numpy as np
 
-from keras.models import Model
-from keras import layers
-from keras.layers import Activation
-from keras.layers import Dense
-from keras.layers import Input
-from keras.layers import BatchNormalization
-from keras.layers import Conv3D
-from keras.layers import MaxPooling3D
-from keras.layers import AveragePooling3D
-from keras.layers import Dropout
-from keras.layers import Reshape
-from keras.layers import Lambda
-from keras.layers import GlobalAveragePooling3D
-
-from keras.engine.topology import get_source_inputs
-from keras.utils import layer_utils
-from keras.utils.data_utils import get_file
-from keras import backend as K
+from tensorflow.keras.models import Model
+from tensorflow.keras import layers
+from tensorflow.keras.layers import Activation, Dense, Input, BatchNormalization, Conv3D, MaxPooling3D, AveragePooling3D, Dropout, Reshape, Lambda, GlobalAveragePooling3D, concatenate
+from tensorflow.keras.utils import get_file
+from tensorflow.keras.backend import image_data_format, is_keras_tensor, mean
 
 WEIGHTS_NAME = ['rgb_kinetics_only', 'flow_kinetics_only', 'rgb_imagenet_and_kinetics', 'flow_imagenet_and_kinetics']
 
@@ -215,7 +202,7 @@ def conv3d_bn(x,
         name=conv_name)(x)
 
     if use_bn:
-        if K.image_data_format() == 'channels_first':
+        if image_data_format() == 'channels_first':
             bn_axis = 1
         else:
             bn_axis = 4
@@ -305,19 +292,19 @@ def Inception_Inflated3d(include_top=True,
         min_frame_size=32, 
         default_num_frames=64,
         min_num_frames=8,
-        data_format=K.image_data_format(),
+        data_format=image_data_format(),
         require_flatten=include_top,
         weights=weights)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)
     else:
-        if not K.is_keras_tensor(input_tensor):
+        if not is_keras_tensor(input_tensor):
             img_input = Input(tensor=input_tensor, shape=input_shape)
         else:
             img_input = input_tensor
 
-    if K.image_data_format() == 'channels_first':
+    if image_data_format() == 'channels_first':
         channel_axis = 1
     else:
         channel_axis = 4
@@ -345,7 +332,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_3b_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 32, 1, 1, 1, padding='same', name='Conv3d_3b_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_3b')
@@ -362,7 +349,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_3c_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 64, 1, 1, 1, padding='same', name='Conv3d_3c_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_3c')
@@ -383,7 +370,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_4b_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 64, 1, 1, 1, padding='same', name='Conv3d_4b_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_4b')
@@ -400,7 +387,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_4c_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 64, 1, 1, 1, padding='same', name='Conv3d_4c_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_4c')
@@ -417,7 +404,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_4d_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 64, 1, 1, 1, padding='same', name='Conv3d_4d_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_4d')
@@ -434,7 +421,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_4e_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 64, 1, 1, 1, padding='same', name='Conv3d_4e_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_4e')
@@ -451,7 +438,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_4f_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 128, 1, 1, 1, padding='same', name='Conv3d_4f_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_4f')
@@ -472,7 +459,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_5b_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 128, 1, 1, 1, padding='same', name='Conv3d_5b_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_5b')
@@ -489,7 +476,7 @@ def Inception_Inflated3d(include_top=True,
     branch_3 = MaxPooling3D((3, 3, 3), strides=(1, 1, 1), padding='same', name='MaxPool2d_5c_3a_3x3')(x)
     branch_3 = conv3d_bn(branch_3, 128, 1, 1, 1, padding='same', name='Conv3d_5c_3b_1x1')
 
-    x = layers.concatenate(
+    x = concatenate(
         [branch_0, branch_1, branch_2, branch_3],
         axis=channel_axis,
         name='Mixed_5c')
@@ -506,7 +493,7 @@ def Inception_Inflated3d(include_top=True,
         x = Reshape((num_frames_remaining, classes))(x)
 
         # logits (raw scores for each class)
-        x = Lambda(lambda x: K.mean(x, axis=1, keepdims=False),
+        x = Lambda(lambda x: mean(x, axis=1, keepdims=False),
                    output_shape=lambda s: (s[0], s[2]))(x)
 
         if not endpoint_logit:
@@ -558,19 +545,6 @@ def Inception_Inflated3d(include_top=True,
 
         downloaded_weights_path = get_file(model_name, weights_url, cache_subdir='models')
         model.load_weights(downloaded_weights_path)
-
-        if K.backend() == 'theano':
-            layer_utils.convert_all_kernels_in_model(model)
-
-        if K.image_data_format() == 'channels_first' and K.backend() == 'tensorflow':
-            warnings.warn('You are using the TensorFlow backend, yet you '
-                          'are using the Theano '
-                          'image data format convention '
-                          '(`image_data_format="channels_first"`). '
-                          'For best performance, set '
-                          '`image_data_format="channels_last"` in '
-                          'your keras config '
-                          'at ~/.keras/keras.json.')
 
     elif weights is not None:
         model.load_weights(weights)
