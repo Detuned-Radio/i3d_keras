@@ -138,7 +138,7 @@ def pre_process_flow(flow_frame, train):
         img_cropped = crop_center(resized, (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE))
     else:
         img_cropped = resized
-    new_img = np.reshape(img_cropped, (1, img_cropped.shape[0], igm_cropped.shape[1], 2))
+    new_img = np.reshape(img_cropped, (1, img_cropped.shape[0], img_cropped.shape[1], 2))
     return new_img
 
 
