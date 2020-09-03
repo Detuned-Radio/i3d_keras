@@ -1,5 +1,8 @@
 import cv2
 import os
+import shutil
+import sys
+import time
 import numpy as np
 import argparse
 
@@ -13,8 +16,7 @@ def sample_video(video_path, path_output):
     # for filename in os.listdir(video_path):
     if video_path.endswith((".mp4", ".avi")):
         # filename = video_path + filename
-        os.system("ffmpeg -r {1} -i {0} -q:v 2 {2}/frame_%05d.jpg".format(video_path, FRAME_RATE,
-                                                                          path_output))
+        os.system(f"ffmpeg -r {FRAME_RATE} -i {video_path} -q:v 2 {path_output}/frame_%05d.jpg")
     else:
         raise ValueError("Video path is not the name of video file (.mp4 or .avi)")
 
@@ -155,16 +157,19 @@ def preprocess_video(video_path, save_path, train=False, debug=False):
         os.makedirs(frame_output_path)
 
     # sample all video from video_path at specified frame rate (FRAME_RATE param)
+    start = time.time()
     sample_video(video_path, frame_output_path)
+    end = time.time()
+    samp_dur = end - start
     if debug:
-        print('Resampled video to 25fps.')
+        print(f'Resampled video to 25fps. Time Taken: {samp_dur} sec')
 
     # make sure the frames are processed in order
     sorted_list_frames = read_frames(frame_output_path)
     if len(sorted_list_frames) == 0:
         print('ERROR: No frames read.')
         os.rmdir(frame_output_path)
-        exit()
+        sys.exit()
     if debug:
         print(f'Read {len(sorted_list_frames)} frames.')
 
@@ -174,16 +179,23 @@ def preprocess_video(video_path, save_path, train=False, debug=False):
     if not os.path.exists(save_path + class_name + "/" ):
         os.makedirs(save_path + class_name + "/" )
 
+    start = time.time()
     rgb = run_rgb(sorted_list_frames, train)
     npy_rgb_output = save_path + class_name + "/" + video_name + '_rgb.npy'
     np.save(npy_rgb_output, rgb)
+    end = time.time()
+    rgb_dur = end - start
     if debug:
-        print('RGB output saved.')
+        print(f'RGB output saved. Time taken: {rgb_dur} sec')
 
+    start = time.time()
     flow = run_flow(sorted_list_frames, train)
     npy_flow_output = save_path + class_name + "/" + video_name + '_flow.npy'
     np.save(npy_flow_output, flow)
+    end = time.time()
+    opt_dur = end - start
     if debug:
-        print('Optical Flow output saved')
+        print(f'Optical Flow output saved. Time taken: {opt_dur} sec')
 
-    os.rmdir(frame_output_path)
+    shutil.rmtree(frame_output_path)
+
