@@ -163,6 +163,8 @@ def preprocess_video(video_path, save_path, train=False):
     video_name = video_path.split("/")[-1][:-4]
     class_name = video_path.split("/")[-2]
 
+    if not os.path.exists(save_path + class_name + "/" ):
+        os.makedirs(save_path + class_name + "/" )
     rgb = run_rgb(sorted_list_frames, train)
     npy_rgb_output = save_path + class_name + "/" + video_name + '_rgb.npy'
     np.save(npy_rgb_output, rgb)
